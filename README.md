@@ -1,4 +1,4 @@
-# Udistrital Web Frontend
+# Web Institucional Frontend
 
 Frontend institucional headless basado en Next.js 16, React 19 y
 `next-drupal`. Consume el contenido publicado por Drupal mediante JSON:API.
@@ -51,8 +51,8 @@ La estructura esperada por el Compose local es:
 ```text
 udistrital-local/
 ├── docker-compose.yml
-├── backend-udistrital/
-└── frontend-udistrital/
+├── web_institucional_backend/
+└── web_institucional_frontend/
 ```
 
 Desde la raiz del entorno Compose:
