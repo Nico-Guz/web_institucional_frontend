@@ -91,6 +91,11 @@ El Compose publica `localhost:8080` para el navegador y usa `backend:80` solo
 para las consultas internas del contenedor frontend. Por eso las dos URLs son
 intencionales y no deben sustituirse por una URL de S3 en desarrollo.
 
+Durante `next dev`, las consultas de artículos no usan caché y las imágenes
+reciben una versión temporal para que Drupal refleje inmediatamente un archivo
+reemplazado con la misma ruta. Los artículos nuevos pueden requerir reiniciar
+el servidor de desarrollo porque las rutas se generan al iniciar la aplicación.
+
 ## Comandos
 
 ```bash

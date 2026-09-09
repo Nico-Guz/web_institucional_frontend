@@ -2,6 +2,7 @@ import Image from "next/image"
 import { notFound } from "next/navigation"
 
 export const dynamicParams = false
+const isDevelopment = process.env.NODE_ENV === "development"
 
 type JsonApiArticleResponse = {
   data?: {
@@ -19,7 +20,7 @@ type JsonApiArticleResponse = {
   included?: {
     type: string
     id: string
-    attributes?: { uri?: { url?: string } }
+    attributes?: { changed?: string; uri?: { url?: string } }
   }[]
 }
 
@@ -78,7 +79,9 @@ export default async function ArticlePage({
     articleUrl.searchParams.set("filter[path.alias]", `/${slug.join("/")}`)
   }
 
-  const response = await fetch(articleUrl, { cache: "force-cache" })
+  const response = await fetch(articleUrl, {
+    cache: isDevelopment ? "no-store" : "force-cache",
+  })
   if (!response.ok) notFound()
 
   const json = (await response.json()) as JsonApiArticleResponse
@@ -86,14 +89,21 @@ export default async function ArticlePage({
   if (!resource) notFound()
 
   const posterReference = resource.relationships?.field_poster?.data
-  const posterPath = json.included?.find(
+  const poster = json.included?.find(
     (item) => item.type === "file--file" && item.id === posterReference?.id,
-  )?.attributes?.uri?.url
+  )
+  const posterPath = poster?.attributes?.uri?.url
   const posterUrl = posterPath
-    ? new URL(
-        posterPath,
-        process.env.NEXT_PUBLIC_DRUPAL_BASE_URL || process.env.DRUPAL_BASE_URL,
-      ).toString()
+    ? (() => {
+        const url = new URL(
+          posterPath,
+          process.env.NEXT_PUBLIC_DRUPAL_BASE_URL || process.env.DRUPAL_BASE_URL,
+        )
+        if (isDevelopment && poster?.attributes?.changed) {
+          url.searchParams.set("v", poster.attributes.changed)
+        }
+        return url.toString()
+      })()
     : null
 
   return (
