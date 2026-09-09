@@ -1,7 +1,7 @@
 const imageProtocol = process.env.NEXT_IMAGE_PROTOCOL === "https" ? "https" : "http"
 
 const nextConfig = {
-  output: "standalone",
+  output: "export",
   images: {
     remotePatterns: [
       {

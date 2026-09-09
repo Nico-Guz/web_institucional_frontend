@@ -1,8 +1,6 @@
 import { drupal } from "@/lib/drupal";
 import { DrupalNode } from "next-drupal";
 
-export const dynamic = "force-dynamic";
-
 export default async function Home() {
   let articles: DrupalNode[] = [];
 
@@ -13,7 +11,6 @@ export default async function Home() {
         sort: "-created",
         "fields[node--article]": "title,path,created",
       },
-      next: { revalidate: 0 },
     });
   } catch (error) {
     console.error("Error next-drupal:", error instanceof Error ? error.message : error);
@@ -28,7 +25,7 @@ export default async function Home() {
       <ul>
         {articles.map((article) => (
           <li key={article.id}>
-            <a href={article.path.alias}>{article.title}</a>
+            <a href={article.path?.alias || `/node/${article.drupal_internal__nid}`}>{article.title}</a>
           </li>
         ))}
       </ul>
