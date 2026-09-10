@@ -1,7 +1,8 @@
 # Web Institucional Frontend
 
 Frontend institucional headless basado en Next.js 16, React 19 y
-`next-drupal`. Consume el contenido publicado por Drupal mediante JSON:API.
+`next-drupal`. Este repositorio contiene exclusivamente la interfaz pública,
+la exportación estática y sus recursos de compilación.
 
 ## Requisitos
 
@@ -9,7 +10,7 @@ Frontend institucional headless basado en Next.js 16, React 19 y
 - npm
 - Docker opcional para ejecutar el frontend en un contenedor
 
-## Instalacion local
+## Desarrollo local
 
 Instala las dependencias y crea las variables de entorno:
 
@@ -35,7 +36,7 @@ npm run dev
 
 Abre http://localhost:3000.
 
-## Integracion con Docker Compose
+## Ejecución con Docker Compose
 
 Cuando Next.js se ejecuta como servicio Docker, `DRUPAL_BASE_URL` debe usar
 el nombre del servicio interno de Compose, no `localhost`:
@@ -92,8 +93,9 @@ para las consultas internas del contenedor frontend. Por eso las dos URLs son
 intencionales y no deben sustituirse por una URL de S3 en desarrollo.
 
 Durante `next dev`, las consultas de artículos no usan caché y las imágenes
-reciben una versión temporal para que Drupal refleje inmediatamente un archivo
-reemplazado con la misma ruta. Los artículos nuevos pueden requerir reiniciar
+reciben como versión la fecha de modificación proporcionada por Drupal. Así,
+un archivo reemplazado con la misma ruta se actualiza inmediatamente. Los
+artículos nuevos pueden requerir reiniciar
 el servidor de desarrollo porque las rutas se generan al iniciar la aplicación.
 
 ## Comandos
@@ -110,7 +112,7 @@ npm run build     # Genera la exportacion estatica en out/
 - `app/[...slug]/page.tsx`: pagina individual por alias de Drupal.
 - `app/acerca-de/page.tsx`: pagina institucional fija.
 - `lib/drupal.ts`: cliente centralizado de `next-drupal`.
-- `next.config.js`: salida estatica y dominios autorizados para imagenes.
+- `next.config.ts`: salida estática y dominios autorizados para imágenes.
 
 ## Variables de entorno
 
@@ -120,10 +122,21 @@ npm run build     # Genera la exportacion estatica en out/
 | `NEXT_PUBLIC_DRUPAL_BASE_URL` | URL publica disponible para el navegador |
 | `NEXT_IMAGE_DOMAIN` | Host permitido para imagenes remotas |
 | `NEXT_IMAGE_PROTOCOL` | Protocolo permitido para imagenes remotas (`http` o `https`) |
+| `NEXT_PUBLIC_SITE_URL` | URL canonica usada por metadata y sitemap |
+| `DRUPAL_ABOUT_PAGE_UUID` | UUID del nodo Drupal mostrado en `/acerca-de` |
+
 No subas `.env.local` ni credenciales al repositorio. El archivo
 `.env.example` si debe versionarse.
 
-## Despliegue en AWS S3 + CloudFront
+## Imágenes en producción
+
+En producción, el frontend no almacena imágenes. Drupal debe devolver mediante
+JSON:API URLs absolutas o relativas que resuelvan al dominio CloudFront
+encargado de servir los objetos del bucket S3 privado. El frontend usa esas
+URLs directamente y `next/image` permanece sin optimización porque no existe
+un servidor Next.js ejecutándose en producción.
+
+## Exportación y publicación en AWS S3 + CloudFront
 
 La aplicación usa `output: "export"`; el build consulta Drupal y genera los
 archivos estáticos en `out/`. El endpoint de Drupal debe estar accesible por
@@ -134,21 +147,21 @@ export DRUPAL_BASE_URL=https://api.example.com
 export NEXT_PUBLIC_DRUPAL_BASE_URL=https://api.example.com
 export NEXT_IMAGE_DOMAIN=api.example.com
 export NEXT_IMAGE_PROTOCOL=https
+export NEXT_PUBLIC_SITE_URL=https://www.example.edu.co
 npm ci
 npm run build
 aws s3 sync out/ s3://NOMBRE_DEL_BUCKET/ --delete
 aws cloudfront create-invalidation --distribution-id ID_DISTRIBUCION --paths '/*'
 ```
 
-Las imágenes no se copian a S3 por este comando: el HTML exportado conserva
-las URLs públicas que Drupal devuelve. Por tanto, Drupal debe seguir sirviendo
-`/sites/default/files/` o las imágenes deben estar previamente disponibles en
-S3/CloudFront.
+Las imágenes no se copian al bucket del frontend por este comando: el HTML
+exportado conserva las URLs que Drupal devuelve. El bucket de archivos de
+Drupal y el bucket del sitio estático son recursos independientes.
 
-Configura en S3 el hosting del sitio y en CloudFront los documentos raíz,
-errores y rutas profundas según la estrategia de aliases elegida. Cada cambio
-editorial requiere un nuevo build, una sincronización del bucket y una
-invalidación de CloudFront.
+Configura un bucket privado para el sitio, OAC entre CloudFront y S3, y en
+CloudFront los documentos raíz, errores y rutas profundas según la estrategia
+de aliases elegida. Cada cambio editorial requiere un nuevo build, una
+sincronización del bucket y una invalidación de CloudFront.
 No ejecutes `next start`: no existe un servidor Next.js en la distribución
 estática.
 
@@ -172,8 +185,10 @@ ejecutar el desarrollo local. La etapa final de producción usa Nginx y contiene
 únicamente los archivos estáticos. Estas etapas no crean servicios adicionales
 en Compose; el único servicio del frontend es `frontend`.
 
-## Repositorio relacionado
+## Integración con el backend
 
-El contenido proviene del repositorio independiente del backend Drupal. Para
-desarrollo local, ambos repositorios se clonan junto con el repositorio de
-infraestructura que contiene `docker-compose.yml`.
+El contenido proviene del repositorio independiente
+`web_institucional_backend`. Durante el build, `DRUPAL_BASE_URL` debe apuntar
+al endpoint HTTPS de Drupal en producción. Para desarrollo local, ambos
+repositorios se clonan junto con el repositorio o directorio de infraestructura
+que contiene `docker-compose.yml`.

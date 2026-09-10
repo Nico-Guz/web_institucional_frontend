@@ -1,8 +1,12 @@
+import type { NextConfig } from "next"
+
 const imageProtocol = process.env.NEXT_IMAGE_PROTOCOL === "https" ? "https" : "http"
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   output: "export",
+  trailingSlash: true,
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: imageProtocol,
@@ -12,4 +16,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+export default nextConfig
